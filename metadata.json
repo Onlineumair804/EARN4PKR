@@ -1,0 +1,6 @@
+{
+  "name": "Earn4PKR - Task Earning & VIP Reward Platform",
+  "description": "Premium Pakistani task earning platform featuring JazzCash and Easypaisa deposits and withdrawals, genuine task rewards, VIP tiers, and referral bonuses.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

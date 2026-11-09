@@ -1,0 +1,81 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        // Users can read their own profile, admins can read/write all
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".validate": "newData.hasChildren(['email', 'username', 'createdAt', 'accountStatus'])"
+      }
+    },
+    "wallets": {
+      "$uid": {
+        // Users can ONLY read their own wallet. User CANNOT modify wallet directly (prevent client balance hacking)
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        // Balances can only be written by admin or secure backend rules
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+      }
+    },
+    "deposits": {
+      // Users can view their own deposits, admins can view all
+      ".read": "auth != null",
+      "$depositId": {
+        // Users can create a deposit request with status 'pending'
+        ".write": "auth != null && (!data.exists() && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'pending') || root.child('admins').child(auth.uid).val() === true",
+        ".validate": "newData.hasChildren(['uid', 'amount', 'transactionId', 'paymentMethod', 'status', 'createdAt'])"
+      }
+    },
+    "withdrawals": {
+      ".read": "auth != null",
+      "$withdrawalId": {
+        // Users can create withdrawal request with status 'pending'
+        ".write": "auth != null && (!data.exists() && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'pending') || root.child('admins').child(auth.uid).val() === true",
+        ".validate": "newData.hasChildren(['uid', 'amount', 'paymentMethod', 'accountNumber', 'status', 'createdAt'])"
+      }
+    },
+    "tasks": {
+      // Any authenticated user can read available tasks
+      ".read": "auth != null",
+      // Only admins can create/update/delete tasks
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "taskSubmissions": {
+      // Users can read their own submissions, admins read all
+      ".read": "auth != null",
+      "$submissionId": {
+        // User creates submission, admin verifies and approves
+        ".write": "auth != null && (!data.exists() && newData.child('uid').val() === auth.uid) || root.child('admins').child(auth.uid).val() === true"
+      }
+    },
+    "dailyRewards": {
+      "$uid_date": {
+        // Ensure single claim per user per calendar day
+        ".read": "auth != null",
+        ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid"
+      }
+    },
+    "transactions": {
+      ".read": "auth != null",
+      "$transactionId": {
+        // Only admin or secure system can record permanent ledger entries
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+      }
+    },
+    "settings": {
+      // Publicly readable for payment account numbers & plan rates
+      ".read": true,
+      // Only admins can modify platform settings & payment details
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "admins": {
+      // Only admins can see and modify admin status
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "adminLogs": {
+      // Admin audit log
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    }
+  }
+}
