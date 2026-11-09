@@ -43,42 +43,12 @@ export const UserDashboard: React.FC<DashboardProps> = ({
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [submissions, setSubmissions] = useState<TaskSubmission[]>([]);
-  const [claimingDaily, setClaimingDaily] = useState(false);
-
-  const todayStr = new Date().toISOString().split('T')[0];
-  const isDailyClaimed =
-    wallet?.lastDailyClaimDate === todayStr ||
-    Boolean(currentUser && localStorage.getItem(`daily_${currentUser.uid}_${todayStr}`));
-
   useEffect(() => {
     if (currentUser) {
       dbService.getTransactions(currentUser.uid).then((txs) => setTransactions(txs.slice(0, 5)));
       dbService.getSubmissions(currentUser.uid).then(setSubmissions);
     }
   }, [currentUser]);
-
-  const handleClaimDaily = async () => {
-    if (!currentUser) return;
-    setClaimingDaily(true);
-    try {
-      const reward = await dbService.claimDailyReward(currentUser.uid);
-      await refreshWallet();
-      confetti({
-        particleCount: 60,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#f59e0b', '#fbbf24', '#ffffff', '#10b981'],
-      });
-      showToast(`Daily login bonus claimed! +${reward} PKR added to wallet!`, 'success');
-      // Refresh transactions
-      const txs = await dbService.getTransactions(currentUser.uid);
-      setTransactions(txs.slice(0, 5));
-    } catch (err: any) {
-      showToast(err.message || 'Failed to claim daily reward.', 'error');
-    } finally {
-      setClaimingDaily(false);
-    }
-  };
 
   const activePlan = plans.find((p) => p.id === wallet?.activePlanId);
   const completedTasksCount = submissions.filter((s) => s.status === 'approved').length;
@@ -118,36 +88,6 @@ export const UserDashboard: React.FC<DashboardProps> = ({
             <span>Withdraw</span>
           </button>
         </div>
-      </div>
-
-      {/* Daily Claim Banner */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-[#0d1a38] via-[#091124] to-[#070b14] border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-            <Gift className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-              <span>Daily Attendance Reward (+15 PKR)</span>
-              {isDailyClaimed && (
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  CLAIMED TODAY
-                </span>
-              )}
-            </h3>
-            <p className="text-xs text-slate-400">
-              Claim your free loyalty bonus every 24 hours. Resets at 12:00 AM PKT.
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={handleClaimDaily}
-          disabled={isDailyClaimed || claimingDaily}
-          className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-navy-950 font-bold text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-amber-500/20 shrink-0"
-        >
-          {isDailyClaimed ? 'Already Claimed' : claimingDaily ? 'Claiming...' : 'Claim 15 PKR Bonus'}
-        </button>
       </div>
 
       {/* 6 Key Financial KPI Cards */}

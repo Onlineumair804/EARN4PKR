@@ -60,7 +60,7 @@ export const Tasks: React.FC<TasksPageProps> = ({ onNavigate }) => {
   );
 
   const filteredTasks = tasks.filter((t) => {
-    if (t.status === 'paused' || t.status === 'archived') return false;
+    if (t.status === 'paused' || t.status === 'archived' || t.category === 'daily_checkin') return false;
     if (selectedCategory !== 'all' && t.category !== selectedCategory) return false;
     return true;
   });
@@ -111,7 +111,6 @@ export const Tasks: React.FC<TasksPageProps> = ({ onNavigate }) => {
               { id: 'all', label: 'All Tasks' },
               { id: 'website_visit', label: 'Website Visits' },
               { id: 'video_watch', label: 'Watch Videos' },
-              { id: 'daily_checkin', label: 'Daily Bonus' },
               { id: 'referral', label: 'Referrals' },
               { id: 'admin_custom', label: 'Special Sponsor Tasks' },
             ].map((cat) => (

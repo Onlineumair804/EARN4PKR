@@ -3,15 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { Coins, ShieldCheck, Lock, HelpCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Coins, MessageCircle, Mail, HelpCircle, ShieldCheck } from 'lucide-react';
+import { dbService } from '../services/firebase';
+import { PlatformSettings } from '../types';
 
 interface FooterProps {
   onNavigate: (view: string) => void;
-  onOpenFirebaseModal: () => void;
+  onOpenFirebaseModal?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenFirebaseModal }) => {
+export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+  const [settings, setSettings] = useState<PlatformSettings | null>(null);
+
+  useEffect(() => {
+    dbService.getSettings().then(setSettings);
+  }, []);
+
+  const websiteName = settings?.websiteName || 'Earn4PKR';
+
   return (
     <footer className="mt-auto border-t border-navy-800 bg-[#060a13] text-slate-400 text-xs py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -23,11 +33,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenFirebaseModal 
                 <Coins className="w-4 h-4" />
               </div>
               <span className="text-base font-bold text-white">
-                Earn<span className="text-amber-400">4PKR</span>
+                {websiteName}
               </span>
             </div>
             <p className="text-slate-400 leading-relaxed text-xs">
-              Premier Pakistani micro-task reward platform. Transparent JazzCash and Easypaisa manual processing with 100% verified ledger.
+              Premier Pakistani micro-task reward platform. Transparent JazzCash and Easypaisa manual processing with verified ledger.
             </p>
           </div>
 
@@ -64,7 +74,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenFirebaseModal 
                   onClick={() => onNavigate('referral')}
                   className="hover:text-amber-400 transition-colors"
                 >
-                  Refer & Earn (50 PKR)
+                  Refer &amp; Earn
                 </button>
               </li>
             </ul>
@@ -87,33 +97,25 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenFirebaseModal 
             </div>
           </div>
 
-          {/* Security & Admin */}
+          {/* Customer Support & Help */}
           <div>
-            <p className="text-slate-200 font-semibold mb-3">Compliance & Database</p>
-            <ul className="space-y-2">
-              <li className="flex items-center gap-1.5 text-slate-400">
-                <Lock className="w-3.5 h-3.5 text-amber-400" />
-                <span>Zero-Client Balance Modification</span>
-              </li>
-              <li className="flex items-center gap-1.5 text-slate-400">
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                <span>Strict Duplicate Trx ID Prevention</span>
-              </li>
-              <li>
-                <button
-                  onClick={onOpenFirebaseModal}
-                  className="text-amber-400 hover:underline flex items-center gap-1"
-                >
-                  <span>Firebase RTDB Integration Guide</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('admin-login')}
-                  className="text-slate-500 hover:text-slate-300 transition-colors text-[11px]"
-                >
-                  Admin Portal Gateway
-                </button>
+            <p className="text-slate-200 font-semibold mb-3">Official Support</p>
+            <ul className="space-y-2.5">
+              {settings?.contactWhatsapp && (
+                <li className="flex items-center gap-2 text-slate-300">
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>WhatsApp: {settings.contactWhatsapp}</span>
+                </li>
+              )}
+              {settings?.contactEmail && (
+                <li className="flex items-center gap-2 text-slate-300 truncate">
+                  <Mail className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="truncate">{settings.contactEmail}</span>
+                </li>
+              )}
+              <li className="flex items-center gap-2 text-slate-400">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Manual Verification Queue</span>
               </li>
             </ul>
           </div>
@@ -121,14 +123,12 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenFirebaseModal 
 
         {/* Regulatory & Planning Disclaimer */}
         <div className="p-3.5 rounded-xl bg-navy-900/60 border border-navy-800 text-[11px] text-slate-400 leading-relaxed">
-          <span className="font-semibold text-amber-400">Regulatory & Planning Notice:</span> Proposed earning rate of 2% daily is displayed for financial planning and simulation purposes only. Earn4PKR does not activate automatic guaranteed deposit-based profits or collect real-money deposits for promised returns without applicable regulatory approvals. Real earnings are derived from genuine verified tasks.
+          <span className="font-semibold text-amber-400">Regulatory Notice:</span> Proposed earning rate of 2% daily is displayed for financial planning and simulation purposes only. {websiteName} does not activate automatic guaranteed deposit-based profits or collect real-money deposits for promised returns without applicable regulatory approvals. Real earnings are derived from genuine verified tasks.
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-navy-800/80 text-[11px] text-slate-500">
-          <p>© {new Date().getFullYear()} Earn4PKR Platform. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {websiteName}. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <span>Built with React + Firebase RTDB</span>
-            <span>·</span>
             <span>Pakistan Standard Time (PKT)</span>
           </div>
         </div>

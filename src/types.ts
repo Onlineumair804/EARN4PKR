@@ -144,16 +144,19 @@ export interface DepositPlan {
 export interface PlatformSettings {
   websiteName: string;
   logoText: string;
+  websiteLogoUrl?: string;
   contactEmail: string;
   contactWhatsapp: string;
   jazzcashAccountName: string;
   jazzcashAccountNumber: string;
   easypaisaAccountName: string;
   easypaisaAccountNumber: string;
+  enableReferralProgram?: boolean;
   referralRewardFixedPKR: number;
+  referralCommissionPercent?: number;
   minWithdrawalPKR: number;
   withdrawalFeePercent: number;
-  dailyLoginRewardPKR: number;
+  dailyLoginRewardPKR?: number;
   maintenanceMode: boolean;
   proposedRateDisclaimer: string;
 }

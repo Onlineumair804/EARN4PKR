@@ -220,16 +220,9 @@ function MainApp() {
         )}
       </main>
 
-      <Footer
-        onNavigate={handleNavigate}
-        onOpenFirebaseModal={() => setIsFirebaseModalOpen(true)}
-      />
+      <Footer onNavigate={handleNavigate} />
 
       {/* Global Modals */}
-      <FirebaseStatusModal
-        isOpen={isFirebaseModalOpen}
-        onClose={() => setIsFirebaseModalOpen(false)}
-      />
 
       <DepositModal
         selectedPlan={selectedPlanForDeposit}

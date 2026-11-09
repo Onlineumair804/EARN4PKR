@@ -17,16 +17,18 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { dbService } from '../services/firebase';
-import { UserProfile } from '../types';
+import { UserProfile, PlatformSettings } from '../types';
 
 export const Referral: React.FC = () => {
   const { currentUser, wallet } = useAuth();
   const { showToast } = useToast();
 
   const [referredUsers, setReferredUsers] = useState<UserProfile[]>([]);
+  const [settings, setSettings] = useState<PlatformSettings | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    dbService.getSettings().then(setSettings);
     if (currentUser) {
       setLoading(true);
       dbService
@@ -39,6 +41,9 @@ export const Referral: React.FC = () => {
     }
   }, [currentUser]);
 
+  const websiteName = settings?.websiteName || 'Earn4PKR';
+  const bountyPKR = settings?.referralRewardFixedPKR ?? 50;
+  const commissionPercent = settings?.referralCommissionPercent ?? 5;
   const referralCode = currentUser?.referralCode || 'PKRVIP';
   const referralLink = `${window.location.origin}?ref=${referralCode}`;
 
@@ -49,14 +54,14 @@ export const Referral: React.FC = () => {
 
   const shareWhatsApp = () => {
     const text = encodeURIComponent(
-      `Earn verified daily PKR with Earn4PKR! Register using my VIP invitation link to claim a 25 PKR welcome starter bonus: ${referralLink}`
+      `Earn verified daily PKR with ${websiteName}! Register using my VIP invitation link to claim a 25 PKR welcome bonus: ${referralLink}`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
   const shareTelegram = () => {
     const text = encodeURIComponent(
-      `Earn verified daily PKR with Earn4PKR! Register with my VIP invitation code: ${referralCode}`
+      `Earn verified daily PKR with ${websiteName}! Register with my VIP invitation code: ${referralCode}`
     );
     window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${text}`, '_blank');
   };
@@ -68,10 +73,10 @@ export const Referral: React.FC = () => {
       {/* Header */}
       <div className="pt-4">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-          Refer &amp; Earn 50 PKR
+          Refer &amp; Earn {bountyPKR} PKR
         </h1>
         <p className="text-xs sm:text-sm text-slate-400">
-          Invite friends, colleagues, and community members. Earn 50 PKR for every verified registration.
+          Invite friends and community members. Earn {bountyPKR} PKR instant bonus plus {commissionPercent}% commission.
         </p>
       </div>
 
@@ -154,7 +159,7 @@ export const Referral: React.FC = () => {
         <div className="p-5 rounded-2xl bg-[#0a1122] border border-navy-800 space-y-1">
           <p className="text-xs text-slate-400">Bounty Per Member</p>
           <p className="text-2xl font-mono font-bold text-emerald-400 tabular-nums">
-            50 PKR
+            {bountyPKR} PKR
           </p>
           <p className="text-[11px] text-slate-500">Instant registration commission</p>
         </div>

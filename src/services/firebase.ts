@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, deleteApp, FirebaseApp } from 'firebase/app';
 import {
   getAuth,
   Auth,
@@ -72,25 +72,87 @@ const STORAGE_KEY_PLANS = 'earn4pkr_db_plans';
 const STORAGE_KEY_ADMIN_LOGS = 'earn4pkr_db_admin_logs';
 const STORAGE_KEY_SESSION_USER = 'earn4pkr_session_user';
 
-export const DEFAULT_FIREBASE_CONFIG: FirebaseConfigParams = {
-  apiKey: (import.meta.env.VITE_FIREBASE_API_KEY as string) || 'AIzaSyB7gXkvPCRuDfvKkfvkaCcaXb1PH0fUZ98',
-  authDomain: (import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string) || 'earn4pkr.firebaseapp.com',
-  databaseURL: (import.meta.env.VITE_FIREBASE_DATABASE_URL as string) || 'https://earn4pkr-default-rtdb.firebaseio.com',
-  projectId: (import.meta.env.VITE_FIREBASE_PROJECT_ID as string) || 'earn4pkr',
-  storageBucket: (import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string) || 'earn4pkr.firebasestorage.app',
-  messagingSenderId: (import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string) || '179213291780',
-  appId: (import.meta.env.VITE_FIREBASE_APP_ID as string) || '1:179213291780:web:0af687f4b9ff2fd26e0051',
+// Authoritative Canonical Firebase Configuration
+export const CANONICAL_FIREBASE_CONFIG: FirebaseConfigParams = {
+  apiKey: 'AIzaSyB7gXkvPCRuDfvKkfvkaCcaXb1PH0fUZ98',
+  authDomain: 'earn4pkr.firebaseapp.com',
+  databaseURL: 'https://earn4pkr-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'earn4pkr',
+  storageBucket: 'earn4pkr.firebasestorage.app',
+  messagingSenderId: '179213291780',
+  appId: '1:179213291780:web:0af687f4b9ff2fd26e0051',
 };
 
-// Determine if we have valid Firebase keys
+// Sanitizer for API Key to strictly remove surrounding quotes, whitespace, or invalid characters
+export function sanitizeApiKey(rawKey?: unknown): string {
+  if (!rawKey || typeof rawKey !== 'string') return CANONICAL_FIREBASE_CONFIG.apiKey;
+  const cleaned = rawKey
+    .trim()
+    .replace(/^["'`\\]+|["'`\\,;]+$/g, '')
+    .replace(/\\"/g, '')
+    .trim();
+  // Valid Google API keys always start with AIzaSy
+  if (!cleaned || !cleaned.startsWith('AIzaSy')) {
+    return CANONICAL_FIREBASE_CONFIG.apiKey;
+  }
+  return cleaned;
+}
+
+export function sanitizeString(raw: unknown, fallback = ''): string {
+  if (!raw || typeof raw !== 'string') return fallback;
+  const cleaned = raw
+    .trim()
+    .replace(/^["'`\\]+|["'`\\,;]+$/g, '')
+    .trim();
+  return cleaned || fallback;
+}
+
+export const DEFAULT_FIREBASE_CONFIG: FirebaseConfigParams = {
+  apiKey: sanitizeApiKey(import.meta.env.VITE_FIREBASE_API_KEY),
+  authDomain: sanitizeString(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN, CANONICAL_FIREBASE_CONFIG.authDomain),
+  databaseURL: sanitizeString(import.meta.env.VITE_FIREBASE_DATABASE_URL, CANONICAL_FIREBASE_CONFIG.databaseURL),
+  projectId: sanitizeString(import.meta.env.VITE_FIREBASE_PROJECT_ID, CANONICAL_FIREBASE_CONFIG.projectId),
+  storageBucket: sanitizeString(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET, CANONICAL_FIREBASE_CONFIG.storageBucket || ''),
+  messagingSenderId: sanitizeString(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID, CANONICAL_FIREBASE_CONFIG.messagingSenderId || ''),
+  appId: sanitizeString(import.meta.env.VITE_FIREBASE_APP_ID, CANONICAL_FIREBASE_CONFIG.appId || ''),
+};
+
+// Export user's web app Firebase configuration
+export const firebaseConfig = DEFAULT_FIREBASE_CONFIG;
+
+// Determine if we have valid Firebase keys with self-healing local storage
 export function getStoredFirebaseConfig(): FirebaseConfigParams {
+  if (typeof window === 'undefined') return DEFAULT_FIREBASE_CONFIG;
+
   const local = localStorage.getItem(STORAGE_KEY_CONFIG);
   if (local) {
     try {
       const parsed = JSON.parse(local);
-      return { ...DEFAULT_FIREBASE_CONFIG, ...parsed };
+      const cleanKey = sanitizeApiKey(parsed.apiKey);
+      const cleanDbUrl = sanitizeString(parsed.databaseURL, DEFAULT_FIREBASE_CONFIG.databaseURL);
+      const cleanAuthDomain = sanitizeString(parsed.authDomain, DEFAULT_FIREBASE_CONFIG.authDomain);
+      const cleanProjectId = sanitizeString(parsed.projectId, DEFAULT_FIREBASE_CONFIG.projectId);
+
+      // Auto-migrate any cached us-central1 URL to exact asia-southeast1 region
+      const finalDbUrl = cleanDbUrl.includes('earn4pkr-default-rtdb.firebaseio.com')
+        ? 'https://earn4pkr-default-rtdb.asia-southeast1.firebasedatabase.app'
+        : cleanDbUrl;
+
+      const sanitized: FirebaseConfigParams = {
+        apiKey: cleanKey,
+        authDomain: cleanAuthDomain,
+        databaseURL: finalDbUrl,
+        projectId: cleanProjectId,
+        storageBucket: sanitizeString(parsed.storageBucket, DEFAULT_FIREBASE_CONFIG.storageBucket || ''),
+        messagingSenderId: sanitizeString(parsed.messagingSenderId, DEFAULT_FIREBASE_CONFIG.messagingSenderId || ''),
+        appId: sanitizeString(parsed.appId, DEFAULT_FIREBASE_CONFIG.appId || ''),
+      };
+
+      // Always persist the healed sanitized version
+      localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(sanitized));
+      return sanitized;
     } catch {
-      // Ignore
+      localStorage.removeItem(STORAGE_KEY_CONFIG);
     }
   }
 
@@ -99,7 +161,12 @@ export function getStoredFirebaseConfig(): FirebaseConfigParams {
 
 export function isFirebaseConfigured(): boolean {
   const cfg = getStoredFirebaseConfig();
-  return Boolean(cfg.apiKey && cfg.databaseURL && !cfg.apiKey.includes('YourApiKeyHere'));
+  return Boolean(
+    cfg.apiKey &&
+    cfg.apiKey.startsWith('AIzaSy') &&
+    cfg.databaseURL &&
+    !cfg.apiKey.includes('YourApiKeyHere')
+  );
 }
 
 let app: FirebaseApp | null = null;
@@ -109,8 +176,20 @@ let storage: FirebaseStorage | null = null;
 
 try {
   const config = getStoredFirebaseConfig();
-  if (config.apiKey && !config.apiKey.includes('YourApiKeyHere')) {
-    app = getApps().length === 0 ? initializeApp(config) : getApp();
+  if (config.apiKey && config.apiKey.startsWith('AIzaSy')) {
+    if (getApps().length === 0) {
+      app = initializeApp(config);
+    } else {
+      const existing = getApp();
+      // Ensure the existing app uses the clean API key
+      if (existing.options.apiKey !== config.apiKey) {
+        deleteApp(existing).catch(() => {});
+        app = initializeApp(config);
+      } else {
+        app = existing;
+      }
+    }
+
     auth = getAuth(app);
     if (config.databaseURL) {
       rtdb = getDatabase(app);
@@ -120,7 +199,7 @@ try {
     }
   }
 } catch (err) {
-  console.warn('Firebase init error, fallback active:', err);
+  console.warn('Firebase initialization notice:', err);
 }
 
 export { app, auth, rtdb, storage };

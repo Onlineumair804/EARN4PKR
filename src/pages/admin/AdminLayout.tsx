@@ -18,6 +18,8 @@ import {
   Database,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { dbService } from '../../services/firebase';
+import { PlatformSettings } from '../../types';
 
 interface AdminLayoutProps {
   currentAdminTab: string;
@@ -35,6 +37,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   children,
 }) => {
   const { currentUser, isFirebaseLive } = useAuth();
+  const [settings, setSettings] = React.useState<PlatformSettings | null>(null);
+
+  React.useEffect(() => {
+    dbService.getSettings().then(setSettings);
+  }, []);
+
+  const websiteName = settings?.websiteName || 'Earn4PKR';
 
   const menuItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -57,7 +66,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               <Shield className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-sm font-extrabold text-white">Earn4PKR</p>
+              <p className="text-sm font-extrabold text-white">{websiteName}</p>
               <p className="text-[10px] font-mono text-amber-400">CONTROL CENTER</p>
             </div>
           </div>

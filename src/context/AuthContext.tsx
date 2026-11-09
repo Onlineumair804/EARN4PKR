@@ -126,7 +126,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ].filter(Boolean);
 
       if (isFirebaseLive && auth) {
-        const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, pass);
+        let userCredential;
+        try {
+          userCredential = await signInWithEmailAndPassword(auth, cleanEmail, pass);
+        } catch (authErr: any) {
+          const errCode = authErr?.code || '';
+          const errMsg = authErr?.message || '';
+
+          if (
+            errCode === 'auth/api-key-not-valid-please-pass-a-valid-api-key' ||
+            errMsg.includes('api-key-not-valid')
+          ) {
+            console.warn('API key mismatch encountered in browser session, auto-healing...');
+            localStorage.removeItem('earn4pkr_firebase_custom_config');
+            throw new Error('Authentication session refreshed. Please click login again.');
+          }
+
+          if (errCode === 'auth/invalid-credential' || errCode === 'auth/wrong-password') {
+            throw new Error('Invalid email or password. Please verify your credentials.');
+          }
+          if (errCode === 'auth/user-not-found') {
+            throw new Error('No account found with this email. Please register first.');
+          }
+          if (errCode === 'auth/too-many-requests') {
+            throw new Error('Access temporarily suspended due to multiple failed login attempts. Please wait a few moments.');
+          }
+          throw new Error(authErr?.message || 'Firebase login failed. Please verify your credentials.');
+        }
+
         const fbUid = userCredential.user.uid;
         let profile = await dbService.getUser(fbUid);
 
@@ -204,8 +231,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let uid = '';
 
       if (isFirebaseLive && auth) {
-        const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
-        uid = userCredential.user.uid;
+        try {
+          const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
+          uid = userCredential.user.uid;
+        } catch (authErr: any) {
+          const errCode = authErr?.code || '';
+          if (errCode === 'auth/email-already-in-use') {
+            throw new Error('An account with this email address already exists. Please log in.');
+          }
+          if (errCode === 'auth/weak-password') {
+            throw new Error('Password should be at least 6 characters.');
+          }
+          if (
+            errCode === 'auth/api-key-not-valid-please-pass-a-valid-api-key' ||
+            authErr?.message?.includes('api-key-not-valid')
+          ) {
+            console.warn('API key mismatch encountered in browser session, auto-healing...');
+            localStorage.removeItem('earn4pkr_firebase_custom_config');
+            throw new Error('Configuration refreshed. Please click register again.');
+          }
+          throw new Error(authErr?.message || 'Registration failed.');
+        }
       } else {
         // Local mode duplicate check
         const allUsers = await dbService.getAllUsers();

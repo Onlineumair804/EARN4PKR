@@ -141,7 +141,7 @@ export const AdminSettings: React.FC = () => {
         <div className="p-6 rounded-2xl bg-[#0a1122] border border-navy-800 space-y-4">
           <h2 className="text-sm font-bold text-white flex items-center gap-2">
             <Shield className="w-4 h-4 text-amber-400" />
-            <span>Reward Rules &amp; Limits</span>
+            <span>Withdrawal &amp; Referral Program Settings</span>
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -163,7 +163,7 @@ export const AdminSettings: React.FC = () => {
 
             <div>
               <label className="block text-slate-300 font-semibold mb-1">
-                Referral Reward (PKR per invite) *
+                Referral Fixed Bonus (PKR per invite) *
               </label>
               <input
                 type="number"
@@ -182,22 +182,38 @@ export const AdminSettings: React.FC = () => {
 
             <div>
               <label className="block text-slate-300 font-semibold mb-1">
-                Daily Check-In Bonus (PKR) *
+                Referral Commission Rate (%) *
               </label>
               <input
                 type="number"
                 required
                 min={0}
-                value={settings.dailyLoginRewardPKR}
+                max={100}
+                value={settings.referralCommissionPercent ?? 5}
                 onChange={(e) =>
                   setSettings({
                     ...settings,
-                    dailyLoginRewardPKR: parseFloat(e.target.value) || 0,
+                    referralCommissionPercent: parseFloat(e.target.value) || 0,
                   })
                 }
                 className="w-full px-3 py-2 rounded-xl bg-navy-950 border border-navy-700 text-white font-mono focus:border-amber-400 focus:outline-none"
               />
             </div>
+          </div>
+
+          <div className="flex items-center gap-3 pt-2">
+            <input
+              type="checkbox"
+              id="enableReferral"
+              checked={settings.enableReferralProgram ?? true}
+              onChange={(e) =>
+                setSettings({ ...settings, enableReferralProgram: e.target.checked })
+              }
+              className="rounded bg-navy-950 border-navy-700 text-amber-500 focus:ring-0"
+            />
+            <label htmlFor="enableReferral" className="text-slate-300 font-medium">
+              Activate Referral Program (Users can invite friends and earn bonuses)
+            </label>
           </div>
         </div>
 
@@ -205,7 +221,7 @@ export const AdminSettings: React.FC = () => {
         <div className="p-6 rounded-2xl bg-[#0a1122] border border-navy-800 space-y-4">
           <h2 className="text-sm font-bold text-white flex items-center gap-2">
             <Mail className="w-4 h-4 text-amber-400" />
-            <span>Branding &amp; Official Support</span>
+            <span>Website Branding &amp; Logo Settings</span>
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -216,6 +232,19 @@ export const AdminSettings: React.FC = () => {
                 required
                 value={settings.websiteName}
                 onChange={(e) => setSettings({ ...settings, websiteName: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-navy-950 border border-navy-700 text-white focus:border-amber-400 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">
+                Website Logo Image URL (Optional)
+              </label>
+              <input
+                type="url"
+                value={settings.websiteLogoUrl || ''}
+                onChange={(e) => setSettings({ ...settings, websiteLogoUrl: e.target.value })}
+                placeholder="https://example.com/logo.png"
                 className="w-full px-3 py-2 rounded-xl bg-navy-950 border border-navy-700 text-white focus:border-amber-400 focus:outline-none"
               />
             </div>
@@ -242,7 +271,7 @@ export const AdminSettings: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center gap-3 pt-6">
+            <div className="sm:col-span-2 flex items-center gap-3 pt-2">
               <input
                 type="checkbox"
                 id="maintenance"

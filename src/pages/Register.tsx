@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Coins, Eye, EyeOff, Lock, Mail, User, Users, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { dbService } from '../services/firebase';
 
 interface RegisterProps {
   onNavigate: (view: string) => void;
@@ -23,8 +24,14 @@ export const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [websiteName, setWebsiteName] = useState('Earn4PKR');
+  const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
+    dbService.getSettings().then((s) => {
+      if (s?.websiteName) setWebsiteName(s.websiteName);
+      if (s?.websiteLogoUrl) setLogoUrl(s.websiteLogoUrl);
+    });
     // Check if ?ref=XYZ exists in URL
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('ref');
@@ -65,10 +72,18 @@ export const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
       <div className="max-w-md w-full bg-[#0b1326] border border-amber-500/30 rounded-3xl p-8 shadow-2xl space-y-6">
         {/* Brand Lockup */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/25">
-            <Coins className="w-6 h-6 text-navy-950 font-black" />
-          </div>
-          <h1 className="text-2xl font-extrabold text-white">Join Earn4PKR VIP</h1>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={websiteName}
+              className="w-14 h-14 rounded-2xl mx-auto object-contain shadow-lg shadow-amber-500/20"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/25">
+              <Coins className="w-6 h-6 text-navy-950 font-black" />
+            </div>
+          )}
+          <h1 className="text-2xl font-extrabold text-white">Join {websiteName} VIP</h1>
           <p className="text-xs text-slate-400">
             Create an account and claim your <span className="text-amber-400 font-bold">25 PKR Welcome Bonus</span>
           </p>

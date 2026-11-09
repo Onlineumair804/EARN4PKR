@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Coins, Eye, EyeOff, Lock, Mail, ArrowRight, Shield } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Coins, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { dbService } from '../services/firebase';
+import { PlatformSettings } from '../types';
 
 interface LoginProps {
   onNavigate: (view: string) => void;
@@ -20,6 +22,14 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [settings, setSettings] = useState<PlatformSettings | null>(null);
+
+  useEffect(() => {
+    dbService.getSettings().then(setSettings);
+  }, []);
+
+  const websiteName = settings?.websiteName || 'Earn4PKR';
+  const logoUrl = settings?.websiteLogoUrl;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,52 +54,26 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
     }
   };
 
-  const fillDemoUser = () => {
-    setEmail('demo@earn4pkr.com');
-    setPassword('User123!@#');
-  };
-
-  const fillOwnerAdmin = () => {
-    setEmail('syedhumyiar@gmail.com');
-    setPassword('Admin123!@#');
-  };
-
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full bg-[#0b1326] border border-amber-500/30 rounded-3xl p-8 shadow-2xl space-y-6">
         {/* Brand Lockup */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/25">
-            <Coins className="w-6 h-6 text-navy-950 font-black" />
-          </div>
-          <h1 className="text-2xl font-extrabold text-white">Log in to Earn4PKR</h1>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={websiteName}
+              className="w-14 h-14 rounded-2xl mx-auto object-contain shadow-lg shadow-amber-500/20"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/25">
+              <Coins className="w-6 h-6 text-navy-950 font-black" />
+            </div>
+          )}
+          <h1 className="text-2xl font-extrabold text-white">Log in to {websiteName}</h1>
           <p className="text-xs text-slate-400">
-            Access your VIP wallet, daily check-ins, and task rewards
+            Enter your email and password to access your account
           </p>
-        </div>
-
-        {/* Demo Quick-Fill Bar */}
-        <div className="p-3 rounded-xl bg-navy-950 border border-navy-800 space-y-2">
-          <div className="flex items-center justify-between text-[11px] text-slate-400">
-            <span>Quick Test Credentials:</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={fillOwnerAdmin}
-              className="py-1.5 px-2 rounded-lg bg-navy-900 hover:bg-navy-850 border border-amber-500/40 text-amber-300 text-xs font-mono transition-colors truncate"
-              title="Syed Humyiar (Super Admin)"
-            >
-              👑 Syed Humyiar
-            </button>
-            <button
-              type="button"
-              onClick={fillDemoUser}
-              className="py-1.5 px-2 rounded-lg bg-navy-900 hover:bg-navy-850 border border-navy-700 text-slate-300 text-xs font-mono transition-colors"
-            >
-              Demo User
-            </button>
-          </div>
         </div>
 
         {/* Login Form */}
@@ -145,28 +129,18 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
             disabled={submitting}
             className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-navy-950 font-bold hover:from-amber-300 hover:to-amber-500 transition-all shadow-lg shadow-amber-500/20 text-xs sm:text-sm disabled:opacity-50"
           >
-            {submitting ? 'Authenticating...' : 'Sign In to Account'}
+            {submitting ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        <div className="pt-4 border-t border-navy-800 text-center space-y-3">
+        <div className="pt-4 border-t border-navy-800 text-center">
           <p className="text-xs text-slate-400">
             Don't have an account?{' '}
             <button
               onClick={() => onNavigate('register')}
               className="font-bold text-amber-400 hover:underline"
             >
-              Register &amp; Claim 25 PKR
-            </button>
-          </p>
-
-          <p className="text-[11px] text-slate-500">
-            Staff or Administrator?{' '}
-            <button
-              onClick={() => onNavigate('admin-login')}
-              className="text-slate-400 hover:text-amber-300 underline"
-            >
-              Admin Security Gateway
+              Sign Up
             </button>
           </p>
         </div>

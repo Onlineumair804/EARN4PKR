@@ -19,7 +19,8 @@ import {
   Sparkles,
   HelpCircle,
 } from 'lucide-react';
-import { DepositPlan } from '../types';
+import { DepositPlan, PlatformSettings } from '../types';
+import { dbService } from '../services/firebase';
 
 interface HomeProps {
   onNavigate: (view: string) => void;
@@ -28,6 +29,13 @@ interface HomeProps {
 }
 
 export const Home: React.FC<HomeProps> = ({ onNavigate, plans, onSelectPlan }) => {
+  const [settings, setSettings] = React.useState<PlatformSettings | null>(null);
+
+  React.useEffect(() => {
+    dbService.getSettings().then(setSettings);
+  }, []);
+
+  const websiteName = settings?.websiteName || 'Earn4PKR';
   const faqs = [
     {
       q: 'How does Earn4PKR work?',
@@ -81,10 +89,10 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, plans, onSelectPlan }) =
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
                 <button
-                  onClick={() => onNavigate('plans')}
+                  onClick={() => onNavigate('login')}
                   className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-navy-900 border border-navy-700 hover:border-amber-500/50 text-slate-200 hover:text-white font-semibold transition-all text-sm sm:text-base"
                 >
-                  View VIP Plans
+                  Sign In
                 </button>
               </div>
 

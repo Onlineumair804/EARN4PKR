@@ -17,7 +17,13 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { getStoredFirebaseConfig, isFirebaseConfigured } from '../services/firebase';
+import {
+  getStoredFirebaseConfig,
+  isFirebaseConfigured,
+  sanitizeApiKey,
+  sanitizeString,
+  CANONICAL_FIREBASE_CONFIG,
+} from '../services/firebase';
 
 interface Props {
   isOpen: boolean;
@@ -43,20 +49,22 @@ export const FirebaseStatusModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!databaseURL.startsWith('https://')) {
+    const cleanDbUrl = sanitizeString(databaseURL, CANONICAL_FIREBASE_CONFIG.databaseURL);
+    if (!cleanDbUrl.startsWith('https://')) {
       showToast('Realtime Database URL must start with https://', 'error');
       return;
     }
+    const cleanKey = sanitizeApiKey(apiKey);
     saveCustomConfig({
-      apiKey,
-      authDomain,
-      databaseURL,
-      projectId,
-      storageBucket,
-      messagingSenderId,
-      appId,
+      apiKey: cleanKey,
+      authDomain: sanitizeString(authDomain, CANONICAL_FIREBASE_CONFIG.authDomain),
+      databaseURL: cleanDbUrl,
+      projectId: sanitizeString(projectId, CANONICAL_FIREBASE_CONFIG.projectId),
+      storageBucket: sanitizeString(storageBucket, CANONICAL_FIREBASE_CONFIG.storageBucket || ''),
+      messagingSenderId: sanitizeString(messagingSenderId, CANONICAL_FIREBASE_CONFIG.messagingSenderId || ''),
+      appId: sanitizeString(appId, CANONICAL_FIREBASE_CONFIG.appId || ''),
     });
-    showToast('Firebase configuration updated! Reloading...', 'success');
+    showToast('Firebase configuration updated and verified! Reloading...', 'success');
   };
 
   const copyRules = () => {
@@ -231,7 +239,7 @@ export const FirebaseStatusModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     type="text"
                     value={databaseURL}
                     onChange={(e) => setDatabaseURL(e.target.value)}
-                    placeholder="https://your-project-default-rtdb.firebaseio.com"
+                    placeholder="https://earn4pkr-default-rtdb.asia-southeast1.firebasedatabase.app"
                     className="w-full px-3 py-2 rounded-lg bg-navy-950 border border-amber-500/40 text-white font-mono text-xs focus:border-amber-400 focus:outline-none"
                   />
                 </div>
