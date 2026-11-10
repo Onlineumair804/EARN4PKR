@@ -23,6 +23,7 @@ import {
   update,
   onValue,
   DatabaseReference,
+  DataSnapshot,
 } from 'firebase/database';
 import {
   getStorage,
@@ -350,14 +351,29 @@ export function initSeedDataIfEmpty(): void {
 
 initSeedDataIfEmpty();
 
+// Safe RTDB query with strict timeout to prevent mobile network hangs
+export async function safeRtdbGet(dbRef: DatabaseReference | null | undefined, timeoutMs = 1500): Promise<DataSnapshot | null> {
+  if (!dbRef) return null;
+  try {
+    const res = await Promise.race([
+      get(dbRef),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ]);
+    return res as DataSnapshot | null;
+  } catch (err) {
+    console.warn('safeRtdbGet error or timeout:', err);
+    return null;
+  }
+}
+
 // --- Realtime Database API Layer ---
 export const dbService = {
   // --- USERS ---
   async getUser(uid: string): Promise<UserProfile | null> {
     if (rtdb) {
       try {
-        const snap = await get(ref(rtdb, `users/${uid}`));
-        if (snap.exists()) {
+        const snap = await safeRtdbGet(ref(rtdb, `users/${uid}`));
+        if (snap?.exists()) {
           const profile: UserProfile = snap.val();
           if (
             uid === 'i9ajhjk1xFYNGOL6mFsEyZOL5GY2' ||
@@ -384,8 +400,8 @@ export const dbService = {
   async getAllUsers(): Promise<UserProfile[]> {
     if (rtdb) {
       try {
-        const snap = await get(ref(rtdb, 'users'));
-        if (snap.exists()) {
+        const snap = await safeRtdbGet(ref(rtdb, 'users'));
+        if (snap?.exists()) {
           const val = snap.val();
           return Object.values(val);
         }
@@ -430,8 +446,8 @@ export const dbService = {
   async getWallet(uid: string): Promise<Wallet> {
     if (rtdb) {
       try {
-        const snap = await get(ref(rtdb, `wallets/${uid}`));
-        if (snap.exists()) return snap.val();
+        const snap = await safeRtdbGet(ref(rtdb, `wallets/${uid}`));
+        if (snap?.exists()) return snap.val();
       } catch (e) {
         console.error('RTDB getWallet error:', e);
       }
@@ -504,8 +520,8 @@ export const dbService = {
   async getDeposits(uid?: string): Promise<DepositRequest[]> {
     if (rtdb) {
       try {
-        const snap = await get(ref(rtdb, 'deposits'));
-        if (snap.exists()) {
+        const snap = await safeRtdbGet(ref(rtdb, 'deposits'));
+        if (snap?.exists()) {
           const list: DepositRequest[] = Object.values(snap.val());
           if (uid) return list.filter((d) => d.uid === uid).sort((a, b) => b.createdAt - a.createdAt);
           return list.sort((a, b) => b.createdAt - a.createdAt);
@@ -652,8 +668,8 @@ export const dbService = {
   async getWithdrawals(uid?: string): Promise<WithdrawalRequest[]> {
     if (rtdb) {
       try {
-        const snap = await get(ref(rtdb, 'withdrawals'));
-        if (snap.exists()) {
+        const snap = await safeRtdbGet(ref(rtdb, 'withdrawals'));
+        if (snap?.exists()) {
           const list: WithdrawalRequest[] = Object.values(snap.val());
           if (uid) return list.filter((w) => w.uid === uid).sort((a, b) => b.createdAt - a.createdAt);
           return list.sort((a, b) => b.createdAt - a.createdAt);
@@ -824,8 +840,8 @@ export const dbService = {
   async getTasks(): Promise<TaskItem[]> {
     if (rtdb) {
       try {
-        const snap = await get(ref(rtdb, 'tasks'));
-        if (snap.exists()) {
+        const snap = await safeRtdbGet(ref(rtdb, 'tasks'));
+        if (snap?.exists()) {
           return Object.values(snap.val());
         }
       } catch (e) {
@@ -862,8 +878,8 @@ export const dbService = {
   async getSubmissions(uid?: string): Promise<TaskSubmission[]> {
     if (rtdb) {
       try {
-        const snap = await get(ref(rtdb, 'taskSubmissions'));
-        if (snap.exists()) {
+        const snap = await safeRtdbGet(ref(rtdb, 'taskSubmissions'));
+        if (snap?.exists()) {
           const list: TaskSubmission[] = Object.values(snap.val());
           if (uid) return list.filter((s) => s.uid === uid).sort((a, b) => b.submittedAt - a.submittedAt);
           return list.sort((a, b) => b.submittedAt - a.submittedAt);
@@ -1029,8 +1045,8 @@ export const dbService = {
   async getTransactions(uid?: string): Promise<Transaction[]> {
     if (rtdb) {
       try {
-        const snap = await get(ref(rtdb, 'transactions'));
-        if (snap.exists()) {
+        const snap = await safeRtdbGet(ref(rtdb, 'transactions'));
+        if (snap?.exists()) {
           const list: Transaction[] = Object.values(snap.val());
           if (uid) return list.filter((t) => t.uid === uid).sort((a, b) => b.createdAt - a.createdAt);
           return list.sort((a, b) => b.createdAt - a.createdAt);
@@ -1077,8 +1093,8 @@ export const dbService = {
   async getPlans(): Promise<DepositPlan[]> {
     if (rtdb) {
       try {
-        const snap = await get(ref(rtdb, 'settings/depositPlans'));
-        if (snap.exists()) {
+        const snap = await safeRtdbGet(ref(rtdb, 'settings/depositPlans'));
+        if (snap?.exists()) {
           return Object.values(snap.val());
         }
       } catch (e) {
@@ -1100,15 +1116,16 @@ export const dbService = {
   async getSettings(): Promise<PlatformSettings> {
     if (rtdb) {
       try {
-        const snap = await get(ref(rtdb, 'settings/website'));
-        if (snap.exists()) {
-          return snap.val();
+        const snap = await safeRtdbGet(ref(rtdb, 'settings/website'));
+        if (snap?.exists()) {
+          return { ...INITIAL_PLATFORM_SETTINGS, ...snap.val() };
         }
       } catch (e) {
         console.error('RTDB getSettings error:', e);
       }
     }
-    return getLocalItem<PlatformSettings>(STORAGE_KEY_SETTINGS, INITIAL_PLATFORM_SETTINGS);
+    const local = getLocalItem<PlatformSettings>(STORAGE_KEY_SETTINGS, INITIAL_PLATFORM_SETTINGS);
+    return { ...INITIAL_PLATFORM_SETTINGS, ...local };
   },
 
   async saveSettings(settings: PlatformSettings, adminUid: string): Promise<void> {

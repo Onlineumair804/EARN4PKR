@@ -124,6 +124,11 @@ export const INITIAL_PLATFORM_SETTINGS: PlatformSettings = {
   minWithdrawalPKR: 200,
   withdrawalFeePercent: 0,
   maintenanceMode: false,
+  maintenanceDurationMinutes: 30,
+  maintenanceUntil: 0,
+  maintenanceTitle: 'Platform Upgrade & System Maintenance',
+  maintenanceMessage:
+    'Earn4PKR is currently undergoing scheduled platform upgrades and security maintenance. All user balances, deposit records, and earnings are 100% safe. We will be back online shortly.',
   proposedRateDisclaimer:
     'Proposed earning rate: 2% daily. Displayed for planning purposes only. Do not activate automatic guaranteed deposit-based profits, collect real-money deposits for promised returns, or process such payouts until the business model has received applicable legal and payment-provider approval.',
 };

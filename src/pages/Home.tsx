@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { DepositPlan, PlatformSettings } from '../types';
 import { dbService } from '../services/firebase';
+import { FAQ } from '../components/FAQ';
 
 interface HomeProps {
   onNavigate: (view: string) => void;
@@ -36,28 +37,6 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, plans, onSelectPlan }) =
   }, []);
 
   const websiteName = settings?.websiteName || 'Earn4PKR';
-  const faqs = [
-    {
-      q: 'How does Earn4PKR work?',
-      a: 'Earn4PKR is a genuine Pakistani micro-task and VIP earning platform. Users complete daily tasks such as sponsored website visits, educational video watching, and community invitations to earn verified PKR directly into their wallet.',
-    },
-    {
-      q: 'Which payment methods are supported for deposits and withdrawals?',
-      a: 'We exclusively support Pakistan’s two most trusted mobile wallets: JazzCash and Easypaisa. Every deposit and withdrawal is verified manually by our finance team.',
-    },
-    {
-      q: 'What is the minimum withdrawal amount?',
-      a: 'The minimum withdrawal threshold is 200 PKR. Once requested, withdrawals are processed to your verified JazzCash or Easypaisa number within 1 to 24 hours.',
-    },
-    {
-      q: 'What is the proposed 2% daily rate for deposit plans?',
-      a: 'The 2% rate is displayed strictly for financial projection and simulation planning. Automatic guaranteed deposit returns are disabled until regulatory licenses are completed. Real earnings come from completing available tasks.',
-    },
-    {
-      q: 'How much can I earn by inviting friends?',
-      a: 'Every member receives a unique referral code. You earn 50 PKR for each active referred member who joins and verifies their account.',
-    },
-  ];
 
   return (
     <div className="space-y-16 pb-16">
@@ -303,31 +282,9 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, plans, onSelectPlan }) =
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Frequently Asked Questions</h2>
-          <p className="text-slate-400 text-xs sm:text-sm">
-            Everything you need to know about Earn4PKR tasks and payments.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          {faqs.map((faq, idx) => (
-            <div
-              key={idx}
-              className="p-4 rounded-xl bg-[#0a1122] border border-navy-800 space-y-1.5"
-            >
-              <p className="text-sm font-bold text-white flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>{faq.q}</span>
-              </p>
-              <p className="text-xs text-slate-400 leading-relaxed pl-6">
-                {faq.a}
-              </p>
-            </div>
-          ))}
-        </div>
+      {/* Interactive FAQ Section */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <FAQ settings={settings} onNavigate={onNavigate} />
       </section>
     </div>
   );

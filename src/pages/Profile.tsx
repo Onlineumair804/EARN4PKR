@@ -18,12 +18,20 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { dbService } from '../services/firebase';
+import { DepositPlan } from '../types';
+import { VIPTierBadge } from '../components/VIPTierBadge';
 
 export const Profile: React.FC = () => {
-  const { currentUser, resetPassword, logout } = useAuth();
+  const { currentUser, wallet, resetPassword, logout } = useAuth();
   const { showToast } = useToast();
 
   const [resetting, setResetting] = useState(false);
+  const [plans, setPlans] = useState<DepositPlan[]>([]);
+
+  React.useEffect(() => {
+    dbService.getPlans().then(setPlans);
+  }, []);
 
   if (!currentUser) return null;
 
@@ -68,6 +76,10 @@ export const Profile: React.FC = () => {
           </div>
 
           <div className="w-full pt-3 border-t border-navy-800 space-y-2 text-xs text-left">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">VIP Tier:</span>
+              <VIPTierBadge plan={plans.find((p) => p.id === wallet?.activePlanId)} size="sm" />
+            </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-400">Role:</span>
               <span className="font-mono font-bold text-amber-400 uppercase">

@@ -158,6 +158,10 @@ export interface PlatformSettings {
   withdrawalFeePercent: number;
   dailyLoginRewardPKR?: number;
   maintenanceMode: boolean;
+  maintenanceDurationMinutes?: number;
+  maintenanceUntil?: number;
+  maintenanceTitle?: string;
+  maintenanceMessage?: string;
   proposedRateDisclaimer: string;
 }
 

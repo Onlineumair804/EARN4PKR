@@ -4,13 +4,29 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Settings, Save, Smartphone, Mail, Shield, CheckCircle2 } from 'lucide-react';
+import {
+  Settings,
+  Save,
+  Smartphone,
+  Mail,
+  Shield,
+  CheckCircle2,
+  Wrench,
+  Clock,
+  AlertTriangle,
+  Power,
+  RefreshCw,
+} from 'lucide-react';
 import { dbService } from '../../services/firebase';
 import { PlatformSettings } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
-export const AdminSettings: React.FC = () => {
+interface AdminSettingsProps {
+  onSettingsUpdated?: (settings: PlatformSettings) => void;
+}
+
+export const AdminSettings: React.FC<AdminSettingsProps> = ({ onSettingsUpdated }) => {
   const { currentUser } = useAuth();
   const { showToast } = useToast();
 
@@ -25,6 +41,30 @@ export const AdminSettings: React.FC = () => {
     });
   }, []);
 
+  const applyMaintenance = async (active: boolean, durationMinutes?: number) => {
+    if (!settings || !currentUser) return;
+    const mins = durationMinutes ?? settings.maintenanceDurationMinutes ?? 30;
+    const updated: PlatformSettings = {
+      ...settings,
+      maintenanceMode: active,
+      maintenanceDurationMinutes: mins,
+      maintenanceUntil: active ? Date.now() + mins * 60 * 1000 : 0,
+    };
+    setSettings(updated);
+    try {
+      await dbService.saveSettings(updated, currentUser.uid);
+      onSettingsUpdated?.(updated);
+      showToast(
+        active
+          ? `Maintenance Mode enabled for ${mins} minutes! Public users now see the countdown screen.`
+          : 'Maintenance Mode turned OFF. Website is now live for all users!',
+        'success'
+      );
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update maintenance mode.', 'error');
+    }
+  };
+
   if (loading || !settings) {
     return (
       <div className="py-12 text-center text-xs text-slate-500 animate-pulse">
@@ -35,11 +75,12 @@ export const AdminSettings: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return;
+    if (!currentUser || !settings) return;
 
     setSaving(true);
     try {
       await dbService.saveSettings(settings, currentUser.uid);
+      onSettingsUpdated?.(settings);
       showToast('Platform & payment settings saved successfully!', 'success');
     } catch (err: any) {
       showToast(err.message || 'Failed to save settings.', 'error');
@@ -271,19 +312,165 @@ export const AdminSettings: React.FC = () => {
               />
             </div>
 
-            <div className="sm:col-span-2 flex items-center gap-3 pt-2">
-              <input
-                type="checkbox"
-                id="maintenance"
-                checked={settings.maintenanceMode}
-                onChange={(e) =>
-                  setSettings({ ...settings, maintenanceMode: e.target.checked })
-                }
-                className="rounded bg-navy-950 border-navy-700 text-amber-500 focus:ring-0"
-              />
-              <label htmlFor="maintenance" className="text-slate-300 font-medium">
-                Enable Maintenance Mode
+          </div>
+        </div>
+
+        {/* Dedicated Maintenance Mode & System Upgrade Controller */}
+        <div className={`p-6 rounded-2xl border transition-all ${
+          settings.maintenanceMode
+            ? 'bg-amber-950/20 border-amber-500/50 shadow-lg shadow-amber-500/5'
+            : 'bg-[#0a1122] border-navy-800'
+        } space-y-5`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
+                settings.maintenanceMode ? 'bg-amber-500 text-navy-950' : 'bg-navy-900 text-slate-400 border border-navy-700'
+              }`}>
+                <Wrench className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Platform Maintenance &amp; Downtime Controller</span>
+                  {settings.maintenanceMode ? (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[10px] font-bold">
+                      ACTIVE (Site in Maintenance)
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold">
+                      NORMAL (Site Online)
+                    </span>
+                  )}
+                </h2>
+                <p className="text-[11px] text-slate-400">
+                  When enabled, regular visitors see a countdown screen. Only logged-in administrators can bypass this screen.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Toggle Switch */}
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              {settings.maintenanceMode ? (
+                <button
+                  type="button"
+                  onClick={() => applyMaintenance(false)}
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
+                >
+                  <Power className="w-3.5 h-3.5" />
+                  <span>Turn Off Maintenance</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => applyMaintenance(true, settings.maintenanceDurationMinutes || 30)}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-navy-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Activate Maintenance</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Maintenance Duration Presets & Custom Minutes */}
+          <div className="p-4 rounded-xl bg-navy-950/80 border border-navy-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-slate-300 font-semibold text-xs flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <span>Maintenance Duration (Minutes):</span>
               </label>
+              <span className="text-[11px] font-mono text-amber-400 font-bold">
+                {settings.maintenanceDurationMinutes || 30} Minutes
+              </span>
+            </div>
+
+            {/* Quick Preset Buttons */}
+            <div className="flex flex-wrap gap-2">
+              {[15, 30, 45, 60, 120, 240].map((mins) => {
+                const isSelected = (settings.maintenanceDurationMinutes || 30) === mins;
+                return (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => {
+                      const until = settings.maintenanceMode
+                        ? Date.now() + mins * 60 * 1000
+                        : settings.maintenanceUntil;
+                      setSettings({
+                        ...settings,
+                        maintenanceDurationMinutes: mins,
+                        maintenanceUntil: until,
+                      });
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      isSelected
+                        ? 'bg-amber-500 text-navy-950 font-bold shadow-md shadow-amber-500/20'
+                        : 'bg-navy-900 border border-navy-700 text-slate-300 hover:text-white hover:border-amber-400/40'
+                    }`}
+                  >
+                    {mins >= 60 ? `${mins / 60}h (${mins}m)` : `${mins} mins`}
+                    {mins === 30 && ' (Default)'}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom Minutes Input */}
+            <div className="pt-1 flex items-center gap-3">
+              <span className="text-[11px] text-slate-400 whitespace-nowrap">Or custom minutes:</span>
+              <input
+                type="number"
+                min={5}
+                max={1440}
+                value={settings.maintenanceDurationMinutes || 30}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 30;
+                  const until = settings.maintenanceMode
+                    ? Date.now() + val * 60 * 1000
+                    : settings.maintenanceUntil;
+                  setSettings({
+                    ...settings,
+                    maintenanceDurationMinutes: val,
+                    maintenanceUntil: until,
+                  });
+                }}
+                className="w-28 px-3 py-1.5 rounded-lg bg-navy-900 border border-navy-700 text-amber-400 font-mono text-xs focus:border-amber-400 focus:outline-none"
+              />
+              <span className="text-[11px] text-slate-500">minutes (e.g. 30, 45, 90)</span>
+            </div>
+          </div>
+
+          {/* Maintenance Custom Message & Heading */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">
+                Maintenance Notice Heading
+              </label>
+              <input
+                type="text"
+                value={settings.maintenanceTitle || 'Platform Upgrade & System Maintenance'}
+                onChange={(e) =>
+                  setSettings({ ...settings, maintenanceTitle: e.target.value })
+                }
+                placeholder="e.g. Platform Upgrade & System Maintenance"
+                className="w-full px-3 py-2 rounded-xl bg-navy-950 border border-navy-700 text-white focus:border-amber-400 focus:outline-none"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-slate-300 font-semibold mb-1">
+                Notice Description for Users
+              </label>
+              <textarea
+                rows={2}
+                value={
+                  settings.maintenanceMessage ||
+                  'Earn4PKR is currently undergoing scheduled platform upgrades and security maintenance. All user balances, deposit records, and earnings are 100% safe. We will be back online shortly.'
+                }
+                onChange={(e) =>
+                  setSettings({ ...settings, maintenanceMessage: e.target.value })
+                }
+                className="w-full px-3 py-2 rounded-xl bg-navy-950 border border-navy-700 text-white focus:border-amber-400 focus:outline-none resize-none leading-relaxed"
+              />
             </div>
           </div>
         </div>

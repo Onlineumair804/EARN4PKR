@@ -87,27 +87,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
 
+    // Safety timeout: ensure loading state is never stuck even if Firebase network lags
+    const timeoutTimer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+
     if (isFirebaseLive && auth) {
       unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-        if (fbUser) {
-          await fetchUserData(fbUser.uid);
-        } else {
-          setCurrentUser(null);
-          setWallet(null);
+        try {
+          if (fbUser) {
+            await Promise.race([
+              fetchUserData(fbUser.uid),
+              new Promise((r) => setTimeout(r, 1000)),
+            ]);
+          } else {
+            setCurrentUser(null);
+            setWallet(null);
+          }
+        } catch (e) {
+          console.warn('Error resolving user profile:', e);
+        } finally {
+          clearTimeout(timeoutTimer);
+          setLoading(false);
         }
-        setLoading(false);
       });
     } else {
+      clearTimeout(timeoutTimer);
       // Local session mode
       const activeUid = localStorage.getItem(LOCAL_SESSION_KEY);
       if (activeUid) {
-        fetchUserData(activeUid).finally(() => setLoading(false));
+        Promise.race([
+          fetchUserData(activeUid),
+          new Promise((r) => setTimeout(r, 1000)),
+        ]).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
     }
 
     return () => {
+      clearTimeout(timeoutTimer);
       if (unsubscribe) unsubscribe();
     };
   }, [isFirebaseLive, fetchUserData]);
