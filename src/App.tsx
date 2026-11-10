@@ -130,6 +130,8 @@ function MainApp() {
     if (!loading) {
       if (currentUser && currentView === 'login') {
         setCurrentView(currentUser.role === 'admin' ? 'admin-dashboard' : 'dashboard');
+      } else if (currentUser && currentUser.role === 'admin' && currentView === 'admin-login') {
+        setCurrentView('admin-dashboard');
       } else if (!currentUser && currentView.startsWith('admin')) {
         // preserve admin-login
         if (currentView !== 'admin-login') {

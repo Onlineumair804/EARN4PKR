@@ -22,6 +22,7 @@ import {
 import { DepositPlan, PlatformSettings } from '../types';
 import { dbService } from '../services/firebase';
 import { FAQ } from '../components/FAQ';
+import heroBanner from '../assets/images/earn4pkr_hero_banner_1794190094762.jpg';
 
 interface HomeProps {
   onNavigate: (view: string) => void;
@@ -31,6 +32,7 @@ interface HomeProps {
 
 export const Home: React.FC<HomeProps> = ({ onNavigate, plans, onSelectPlan }) => {
   const [settings, setSettings] = React.useState<PlatformSettings | null>(null);
+  const [imageError, setImageError] = React.useState(false);
 
   React.useEffect(() => {
     dbService.getSettings().then(setSettings);
@@ -94,13 +96,41 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, plans, onSelectPlan }) =
 
             {/* Right Column: Hero Visual Asset */}
             <div className="lg:col-span-5 relative">
-              <div className="relative rounded-2xl overflow-hidden border border-amber-500/30 shadow-2xl shadow-amber-500/10 group">
-                <img
-                  src="/src/assets/images/earn4pkr_hero_banner_1794190094762.jpg"
-                  alt="Earn4PKR VIP Wealth & Tasks Emblem"
-                  className="w-full h-auto object-cover aspect-[16/9] lg:aspect-[4/3] group-hover:scale-105 transition-transform duration-500"
-                  referrerPolicy="no-referrer"
-                />
+              <div className="relative rounded-2xl overflow-hidden border border-amber-500/30 shadow-2xl shadow-amber-500/10 group min-h-[260px] bg-gradient-to-br from-navy-900 via-[#0b1426] to-navy-950 flex items-center justify-center">
+                {!imageError ? (
+                  <img
+                    src={heroBanner || '/earn4pkr_hero_banner.jpg'}
+                    alt="Earn4PKR VIP Wealth & Tasks Emblem"
+                    loading="eager"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (!target.src.includes('earn4pkr_hero_banner.jpg')) {
+                        target.src = '/earn4pkr_hero_banner.jpg';
+                      } else if (!target.src.includes('earn4pkr_hero_banner_1794190094762.jpg')) {
+                        target.src = '/assets/images/earn4pkr_hero_banner_1794190094762.jpg';
+                      } else {
+                        setImageError(true);
+                      }
+                    }}
+                    className="w-full h-auto object-cover aspect-[16/9] lg:aspect-[4/3] group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="w-full aspect-[16/9] lg:aspect-[4/3] flex flex-col items-center justify-center p-8 text-center space-y-4 bg-gradient-to-b from-navy-900/90 via-navy-950 to-[#070b14]">
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-400 p-0.5 shadow-xl shadow-amber-500/30">
+                      <div className="w-full h-full rounded-2xl bg-navy-950 flex items-center justify-center">
+                        <Award className="w-10 h-10 text-amber-400" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-white">VIP WEALTH PLATFORM</h3>
+                      <p className="text-xs font-mono text-amber-400 mt-1">Earn4PKR Verified Tasks &amp; Rapid Payouts</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-300 bg-navy-900/80 px-4 py-2 rounded-full border border-navy-700">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <span>JazzCash &amp; Easypaisa Integrated</span>
+                    </div>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/20 to-transparent pointer-events-none" />
                 <div className="absolute bottom-4 left-4 right-4 p-3.5 rounded-xl bg-navy-900/90 border border-navy-700/80 backdrop-blur-md flex items-center justify-between">
                   <div>

@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Coins, MessageCircle, Mail, HelpCircle, ShieldCheck } from 'lucide-react';
+import { Coins, MessageCircle, Mail, HelpCircle, ShieldCheck, Lock } from 'lucide-react';
 import { dbService } from '../services/firebase';
 import { PlatformSettings } from '../types';
 
@@ -129,7 +129,14 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-navy-800/80 text-[11px] text-slate-500">
           <p>© {new Date().getFullYear()} {websiteName}. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <span>Pakistan Standard Time (PKT)</span>
+            <button
+              onClick={() => onNavigate('admin-login')}
+              className="text-slate-500 hover:text-amber-400 transition-colors flex items-center gap-1.5 focus:outline-none cursor-pointer"
+              title="Staff Portal (PKT)"
+            >
+              <Lock className="w-3 h-3 text-slate-600 hover:text-amber-400" />
+              <span>Pakistan Standard Time (PKT)</span>
+            </button>
           </div>
         </div>
       </div>
